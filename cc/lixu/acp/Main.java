@@ -10,6 +10,7 @@ public class Main {
         if (Const.UserList != null) Const.UserList.clear();
         if (Const.CourseMap != null) Const.CourseMap.clear();
         if (Const.Courselist != null) Const.Courselist.clear();
+        Const.NowUser = null;
         Const.LoginNum = 0;
         Const.CourseNum = 0;
         Scanner scan = new Scanner(System.in);
@@ -63,6 +64,30 @@ public class Main {
 
             case "cancelCourse":
                 Commends.cancelCourse(strs);
+                break;
+
+            case "switch":
+                Commends.switchCommend(strs);
+                break;
+
+            case "inputCourseBatch":
+                Commends.inputCourseBatch(strs);
+                break;
+
+            case "outputCourseBatch":
+                Commends.outputCourseBatch(strs);
+                break;
+
+            case "listStudent":
+                Commends.listStudent(strs);
+                break;
+
+            case "removeStudent":
+                Commends.removeStudent(strs);
+                break;
+
+            case "listCourseSchedule":
+                Commends.listCourseSchedule(strs);
                 break;
 
             default:

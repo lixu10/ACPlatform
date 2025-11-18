@@ -1,16 +1,22 @@
 package cc.lixu.acp;
-import cc.lixu.acp.courseop.CourseDelete;
-import cc.lixu.acp.courseop.Coursesort;
-import cc.lixu.acp.courseop.isConflict;
-import cc.lixu.acp.courseop.isConflict_stu;
+import cc.lixu.acp.courseop.*;
 import cc.lixu.acp.judge.*;
 import cc.lixu.acp.userop.Logout;
 
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
 
 public class Commends {
+    private static Path resolveDataPath(String rawPath) {
+        return Paths.get("data").resolve(rawPath).normalize();
+    }
+
     static public void quit(String[] strs){
         if(strs.length > 1) {
             System.out.println("Illegal argument count");return ;
@@ -83,25 +89,26 @@ public class Commends {
         user.setLogin(true);
         user.loginTime = ++Const.LoginNum ;
         Const.UserList.add(id);
+        Const.NowUser = id;
         System.out.println("Welcome to ACP, " + id);
     }
     static public void logout(String[] strs){
         if(strs.length != 1 && strs.length !=2) {System.out.println("Illegal argument count"); return;}
         if(strs.length == 1){
-            if(Const.UserList.isEmpty()){
+            if(Const.NowUser == null){
                 System.out.println("No one is online");
                 return ;
             }
-            String logoutId = Const.UserList.get(Const.UserList.size()-1);
+            String logoutId = Const.NowUser;
             Logout.logout(logoutId);
             return;
         }
-        if(Const.UserList.isEmpty()){
+        if(Const.NowUser == null){
             System.out.println("No one is online");
             return ;
         }
         String logoutId = strs[1];
-        String NowID = Const.UserList.get(Const.UserList.size()-1);
+        String NowID = Const.NowUser;
         if(!Objects.equals(Const.UsersMap.get(NowID).getType(), "Administrator")){
             System.out.println("Permission denied");
             return ;
@@ -123,19 +130,19 @@ public class Commends {
     static public void printInfo(String[] strs){
         if(strs.length != 1 && strs.length !=2) {System.out.println("Illegal argument count"); return;}
         if(strs.length == 1){
-            if(Const.UserList.isEmpty()){
+            if(Const.NowUser == null){
                 System.out.println("No one is online");
                 return ;
             }
-            System.out.println(Const.UsersMap.get(Const.UserList.get(Const.UserList.size()-1)).toString());
+            System.out.println(Const.UsersMap.get(Const.NowUser).toString());
             return;
         }
-        if(Const.UserList.isEmpty()){
+        if(Const.NowUser == null){
             System.out.println("No one is online");
             return ;
         }
         String printId = strs[1];
-        String NowID = Const.UserList.get(Const.UserList.size()-1);
+        String NowID = Const.NowUser;
         if(!Objects.equals(Const.UsersMap.get(NowID).getType(), "Administrator")){
             System.out.println("Permission denied");
             return ;
@@ -159,11 +166,11 @@ public class Commends {
         String time = strs[2];
         String score = strs[3];
         String studytime = strs[4];
-        if(Const.UserList.isEmpty()){
+        if(Const.NowUser == null){
             System.out.println("No one is online");
             return ;
         }
-        String NowID = Const.UserList.get(Const.UserList.size()-1);
+        String NowID = Const.NowUser;
         User NowTeacher = Const.UsersMap.get(NowID);
         if(!Objects.equals(NowTeacher.getType(), "Teacher")){
             System.out.println("Permission denied");
@@ -207,11 +214,11 @@ public class Commends {
     }
     static public void listCourse(String[] strs){
         if(strs.length != 1 && strs.length !=2) {System.out.println("Illegal argument count"); return;}
-        if(Const.UserList.isEmpty()){
+        if(Const.NowUser == null){
             System.out.println("No one is online");
             return ;
         }
-        User requestUser = Const.UsersMap.get(Const.UserList.get(Const.UserList.size()-1));
+        User requestUser = Const.UsersMap.get(Const.NowUser);
         if(strs.length == 1){
             if(requestUser.getType().equals("Student")||requestUser.getType().equals("Administrator")){
 
@@ -272,11 +279,11 @@ public class Commends {
             return ;
         }
         String lessonId = strs[1];
-        if(Const.UserList.isEmpty()){
+        if(Const.NowUser == null){
             System.out.println("No one is online");
             return ;
         }
-        User nowUser = Const.UsersMap.get(Const.UserList.get(Const.UserList.size()-1));
+        User nowUser = Const.UsersMap.get(Const.NowUser);
         if(!nowUser.getType().equals("Student")){
             System.out.println("Permission denied");
             return ;
@@ -294,8 +301,13 @@ public class Commends {
             System.out.println("Course time conflicts");
             return;
         }
+        if(nowLesson.getStuNum() >= 30){
+            System.out.println("Course capacity is full");
+            return;
+        }
         nowUser.StuCourses.add(nowLesson);
         nowLesson.selectStu.add(nowUser);
+        nowLesson.setStuNum(nowLesson.getStuNum()+1);
         System.out.println("Select course success (courseId: "+lessonId+")");
     }
     static public void cancelCourse(String[] strs){
@@ -304,7 +316,7 @@ public class Commends {
             return ;
         }
         String lessonId = strs[1];
-        if(Const.UserList.isEmpty()){
+        if(Const.NowUser == null){
             System.out.println("No one is online");
             return ;
         }
@@ -312,7 +324,7 @@ public class Commends {
             System.out.println("Illegal course id");
             return;
         }
-        User nowUser = Const.UsersMap.get(Const.UserList.get(Const.UserList.size()-1));
+        User nowUser = Const.UsersMap.get(Const.NowUser);
         if(!Const.CourseMap.containsKey(Long.parseLong(lessonId.substring(2)))){
             System.out.println("Course does not exist");
             return;
@@ -335,6 +347,254 @@ public class Commends {
         CourseDelete.delete(nowLesson);
         System.out.println("Cancel course success (courseId: "+lessonId+")"); return;
     }
+
+    static public void switchCommend(String[] strs){ // 切换用户
+        if(strs.length != 2){
+            System.out.println("Illegal argument count");
+            return ;
+        }
+        String userId = strs[1];
+        if(!ID.isvalid(userId)){
+            System.out.println("Illegal user id");
+            return ;
+        }
+        if(!Const.UsersMap.containsKey(userId)){
+            System.out.println("User does not exist");
+            return ;
+        }
+        if(!Const.UsersMap.get(userId).isLogin()){
+            System.out.println(userId + " is not online");
+            return ;
+        }
+        Const.NowUser = userId;
+        System.out.println("Switch to "+ userId);
+    }
+
+    static public void inputCourseBatch(String[] strs){ // 	批量导入课程
+        if(strs.length != 2){
+            System.out.println("Illegal argument count");
+            return ;
+        }
+        String path = strs[1];
+        if(Const.NowUser == null){
+            System.out.println("No one is online");
+            return;
+        }
+        User NowTeacher = Const.UsersMap.get(Const.NowUser);
+        if(!NowTeacher.getType().equals("Teacher")){
+            System.out.println("Permission denied");
+            return;
+        }
+        Path p = resolveDataPath(path);
+        //文件路径对应的文件不存在
+        if(!Files.exists(p)){
+            System.out.println("File does not exist"); return;
+        }
+        //文件路径对应的文件是目录
+        if(Files.isDirectory(p)){
+            System.out.println("File is a directory"); return ;
+        }
+        try {
+            CourseImport.CourseImport(NowTeacher, p);
+        } catch (Exception e) {
+            System.out.println("Error: " + e.getMessage());
+        }
+        System.out.println("Input course batch success");
+    }
+
+    static public void outputCourseBatch(String[] strs){ // 批量导出课程
+        if(strs.length != 2){
+            System.out.println("Illegal argument count");
+            return ;
+        }
+        String path = strs[1];
+        if(Const.NowUser == null){
+            System.out.println("No one is online");
+            return;
+        }
+        User NowTeacher = Const.UsersMap.get(Const.NowUser);
+        if(!NowTeacher.getType().equals("Teacher")){
+            System.out.println("Permission denied");
+            return;
+        }
+        Path target = resolveDataPath(path);
+        try {
+            if (target.getParent() != null) {
+                Files.createDirectories(target.getParent());
+            }
+            CourseExport.TeacherExport(NowTeacher, target);
+        } catch (Exception e) {
+            System.out.println("Error: " + e.getMessage());
+        }
+        System.out.println("Output course batch success");
+    }
+
+    static public void listStudent(String[] strs){ // 查看选课学生
+        if(strs.length != 2){
+            System.out.println("Illegal argument count");
+            return ;
+        }
+        String lessonId = strs[1];
+        if(Const.NowUser == null){
+            System.out.println("No one is online");
+            return;
+        }
+        User NowU = Const.UsersMap.get(Const.NowUser);
+        if(!(NowU.getType().equals("Teacher")||NowU.getType().equals("Administrator"))){
+            System.out.println("Permission denied");
+            return;
+        }
+        if(!CourseId.isvalid(lessonId)){
+            System.out.println("Illegal course id");
+            return;
+        }
+        if(!Const.CourseMap.containsKey(Long.parseLong(lessonId.substring(2)))){
+            System.out.println("Course does not exist");
+            return;
+        }
+        Course lesson = Const.CourseMap.get(Long.parseLong(lessonId.substring(2)));
+        if(NowU.getType().equals("Teacher")){
+            if(!NowU.coursesAll.contains(lesson)){
+                System.out.println("Course does not exist");
+                return;
+            }
+        }
+        if(lesson.selectStu.isEmpty()){
+            System.out.println("Student does not select course");
+            return;
+        }
+        CourseStuSort.sort(lesson);
+        for(User stu: lesson.selectStu){
+            System.out.println(stu.getId()+": "+stu.getName());
+        }
+        System.out.println("List student success");
+    }
+
+    static public void removeStudent(String[] strs){ // 移除选课学生
+        if(strs.length!=2 && strs.length!=3){
+            System.out.println("Illegal argument count"); return;
+        }
+        if(Const.NowUser == null){
+            System.out.println("No one is online");
+            return;
+        }
+        User NowU = Const.UsersMap.get(Const.NowUser);
+        if(!(NowU.getType().equals("Teacher")||NowU.getType().equals("Administrator"))){
+            System.out.println("Permission denied");
+            return;
+        }
+        String StuId = strs[1];
+        if(!ID.isvalid(StuId)){
+            System.out.println("Illegal user id");
+            return;
+        }
+        if(!Const.UsersMap.containsKey(StuId)){
+            System.out.println("User does not exist"); return;
+        }
+        User Stu = Const.UsersMap.get(StuId);
+        if(!Stu.getType().equals("Student")){
+            System.out.println("User id does not belong to a Student"); return;
+        }
+        if(strs.length == 2){
+            if(NowU.getType().equals("Teacher")){
+                boolean flag = false;
+                for(Course lesson: NowU.coursesAll){
+                    if(lesson.selectStu.contains(Stu)){
+                        lesson.selectStu.remove(Stu);
+                        Stu.StuCourses.remove(lesson);
+                        flag = true;
+                    }
+                }
+                if(flag) System.out.println("Remove student success");
+                else{
+                    System.out.println("Student does not select course");
+                    return;
+                }
+            }else{
+                if(Stu.StuCourses.isEmpty()){
+                    System.out.println("Student does not select course");
+                    return;
+                }
+                List<Course> copy = new ArrayList<>(Stu.StuCourses);
+                for (Course lesson : copy) {
+                    lesson.selectStu.remove(Stu);
+                    Stu.StuCourses.remove(lesson);
+                }
+                System.out.println("Remove student success");
+            }
+        }else{
+            String lessonId = strs[2];
+            if(!CourseId.isvalid(lessonId)){
+                System.out.println("Illegal course id");
+                return;
+            }
+            if(!Const.CourseMap.containsKey(Long.parseLong(lessonId.substring(2)))){
+                System.out.println("Course does not exist");
+                return;
+            }
+            Course lesson = Const.CourseMap.get(Long.parseLong(lessonId.substring(2)));
+            if(NowU.getType().equals("Teacher")){
+                if(!NowU.coursesAll.contains(lesson)){
+                    System.out.println("Course does not exist");
+                    return;
+                }
+            }
+            if(!lesson.selectStu.contains(Stu)){
+                System.out.println("Student does not select course");
+                return;
+            }
+            lesson.selectStu.remove(Stu);
+            Stu.StuCourses.remove(lesson);
+            System.out.println("Remove student success");
+        }
+    }
+
+    static public void listCourseSchedule(String[] strs){ // 查看课表
+        if(strs.length!=1 && strs.length!=2){
+            System.out.println("Illegal argument count");
+            return;
+        }
+        if(Const.NowUser == null){
+            System.out.println("No one is online");
+            return;
+        }
+        User NowU = Const.UsersMap.get(Const.NowUser);
+        if(strs.length == 1){
+            if(!NowU.getType().equals("Student")){
+                System.out.println("Permission denied");
+                return;
+            }
+            if(NowU.StuCourses.isEmpty()){
+                System.out.println("Student does not select course");
+                return;
+            }
+            CourseListStu.list(NowU);
+        }else{
+            if(!NowU.getType().equals("Administrator")){
+                System.out.println("Permission denied"); return ;
+            }
+            String StuId = strs[1];
+            if(!ID.isvalid(StuId)){
+                System.out.println("Illegal user id");
+                return;
+            }
+            if(!Const.UsersMap.containsKey(StuId)){
+                System.out.println("User does not exist");
+                return;
+            }
+            User Stu = Const.UsersMap.get(StuId);
+            if(!Stu.getType().equals("Student")){
+                System.out.println("User id does not belong to a Student");
+                return;
+            }
+            if(Stu.StuCourses.isEmpty()){
+                System.out.println("Student does not select course");
+                return;
+            }
+            CourseListStu.list(Stu);
+        }
+    }
+
     static public void unknownCommend(String[] strs){
         System.out.println("Command '" + strs[0] + "' not found");
     }

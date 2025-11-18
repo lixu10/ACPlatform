@@ -10,6 +10,7 @@ public class Course {
     private double score;
     private int studytime;
     private String teacherId;
+    private int stuNum;
 
     public List<User> selectStu = new ArrayList<>();
 
@@ -18,6 +19,7 @@ public class Course {
         this.time = time;
         this.score = score;
         this.studytime = studytime;
+        this.stuNum = 0;
     }
 
     public String getName() {
@@ -66,6 +68,14 @@ public class Course {
 
     public void setTeacherId(String teacherId) {
         this.teacherId = teacherId;
+    }
+
+    public int getStuNum() {
+        return stuNum;
+    }
+
+    public void setStuNum(int stuNum) {
+        this.stuNum = stuNum;
     }
 
     @Override

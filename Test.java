@@ -2,6 +2,11 @@ import cc.lixu.acp.Main;
 
 public class Test {
     public static void main(String[] args) {
-        Main.main(args);
+        try {
+            Main.main(args);
+        }
+        catch (Exception e) {
+            System.out.println("Error: " + e.getMessage());
+        }
     }
 }
